@@ -1,0 +1,7 @@
+.env
+__pycache__
+ignored/
+ignored/*
+*.json
+*.egg-info
+build/

@@ -1,0 +1,3 @@
+html,task definiton
+1.html,search for the model mistralai/Mistral-7B-Instruct-v0.2 
+2.html,test the model inference with the following input: hello how are you?
