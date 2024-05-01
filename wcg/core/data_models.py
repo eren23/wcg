@@ -10,7 +10,7 @@ class QueryRequest(BaseModel):
     streaming: Optional[bool] = Field(False, example=False)
     prompt_template: Optional[str] = Field("js", example="js")
     extractor_type: Optional[str] = Field("ai", example="ai")
-    use_local_embeddings: Optional[bool] = Field(False, example=False)
+    use_local_embeddings: Optional[bool] = Field(True, example=False)
     open_source_llm: Optional[bool] = Field(False, example=False)
     debug: Optional[bool] = Field(False, example=False)
     embedding_model: Optional[str] = Field(
