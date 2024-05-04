@@ -81,8 +81,8 @@ def calculate_chunk_parameters(html_content: str) -> (int, int):
     average_paragraph_length = sum(len(p) for p in html_content.split("</p>")) / max(
         1, html_content.count("</p>")
     )
-    chunk_lines = max(20, int(average_paragraph_length / 80))
-    chunk_lines_overlap = int(chunk_lines * 0.5)
+    chunk_lines = max(40, int(average_paragraph_length / 40))
+    chunk_lines_overlap = int(chunk_lines * 0.25)
     return chunk_lines, chunk_lines_overlap
 
 
@@ -98,7 +98,7 @@ def create_index(
         language="html",
         chunk_lines=chunk_lines,
         chunk_lines_overlap=chunk_lines_overlap,
-        max_chars=1500,
+        max_chars=2000,
     )
     chunks = splitter.split_text(html_content)
     nodes = [Document(text=chunk) for chunk in chunks if chunk.strip()]
