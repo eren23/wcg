@@ -1,17 +1,21 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment, ProcessingInstruction
 import json
 from llama_index.core.query_engine import RetrieverQueryEngine
 
 
 def clean_html(html_content: str) -> str:
-    """Removes scripts and styles, then strips and cleans the HTML content."""
+    """Removes comments, processing instructions, and unnecessary whitespace from the HTML content."""
     soup = BeautifulSoup(html_content, "html.parser")
-    for script in soup(["script", "style"]):
-        script.decompose()
-    text = soup.get_text()
+
+    # Remove comments and processing instructions
+    for element in soup.find_all(
+        text=lambda text: isinstance(text, (Comment, ProcessingInstruction))
+    ):
+        element.extract()
+
+    text = soup.get_text(separator="\n")
     lines = (line.strip() for line in text.splitlines())
-    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-    return "\n".join(chunk for chunk in chunks if chunk)
+    return "\n".join(line for line in lines if line)
 
 
 def query_html(
