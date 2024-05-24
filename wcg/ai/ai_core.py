@@ -71,5 +71,11 @@ class LLMFactory(metaclass=SingletonMeta):
             return TogetherLLM(model=model, api_key=api_key)
         elif llm_type == "ollama":
             return Ollama(model=model, request_timeout=30.0)
+        elif llm_type == "openai":
+            from llama_index.llms.openai import OpenAI
+            from llama_index.core import Settings
+
+            Settings.llm = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"), model=model)
+            return None
         else:
             return None
