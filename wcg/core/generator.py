@@ -39,6 +39,8 @@ class BaseExtractor(ABC):
                 llm_type=self.request.llm_type,
                 llm_model=self.request.llm_model,
                 query=query,
+                chunk_lines=40,
+                chunk_lines_overlap=0.25,
             )
             result = query_html(
                 query_engine,

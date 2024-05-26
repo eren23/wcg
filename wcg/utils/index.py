@@ -76,7 +76,9 @@ def get_or_create_llm(api_key: str, model: str, llm_type: str):
     return cache[cache_key]
 
 
-def calculate_chunk_parameters(html_content: str) -> (int, int):
+def calculate_chunk_parameters(
+    html_content: str, chunk_lines: int = 40, chunk_lines_overlap: float = 0.25
+) -> (int, int):
     """Calculate chunk lines and overlap based on HTML content."""
     average_paragraph_length = sum(len(p) for p in html_content.split("</p>")) / max(
         1, html_content.count("</p>")
@@ -90,9 +92,13 @@ def create_index(
     html_content: str,
     use_local_embeddings: bool = False,
     embed_model_name: str = "BAAI/bge-small-en-v1.5",
+    chunk_lines: int = 40,
+    chunk_lines_overlap: float = 0.25,
 ) -> VectorStoreIndex:
     """Creates a VectorStoreIndex from HTML content, optionally using local embeddings."""
-    chunk_lines, chunk_lines_overlap = calculate_chunk_parameters(html_content)
+    chunk_lines, chunk_lines_overlap = calculate_chunk_parameters(
+        html_content, chunk_lines=chunk_lines, chunk_lines_overlap=chunk_lines_overlap
+    )
 
     splitter = CodeSplitter(
         language="html",
@@ -133,12 +139,20 @@ def get_query_engine(
     llm_type: str = "openai",
     llm_model: str = "gpt-3.5-turbo",
     query: str = None,
+    chunk_lines: int = 40,
+    chunk_lines_overlap: float = 0.25,
 ) -> RetrieverQueryEngine:
     """Configures and returns a RetrieverQueryEngine for querying HTML content."""
     embed_model = (
         get_or_create_embedding_model(model_name) if use_local_embeddings else None
     )
-    index = create_index(html_content, use_local_embeddings, model_name)
+    index = create_index(
+        html_content,
+        use_local_embeddings,
+        model_name,
+        chunk_lines=chunk_lines,
+        chunk_lines_overlap=chunk_lines_overlap,
+    )
 
     retriever = BM25Retriever.from_defaults(index=index, similarity_top_k=top_k)
     api_key = api_key_finder(llm_type)
