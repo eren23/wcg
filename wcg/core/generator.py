@@ -6,6 +6,7 @@ from wcg.ai.ai_core import AIExtractorClient
 from wcg.utils.code import extract_first_code_block
 from wcg.utils.index import get_query_engine
 from wcg.utils.html import query_html
+from wcg.utils.index import ChunkingConfig
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -39,8 +40,11 @@ class BaseExtractor(ABC):
                 llm_type=self.request.llm_type,
                 llm_model=self.request.llm_model,
                 query=query,
-                chunk_lines=40,
-                chunk_lines_overlap=0.25,
+                chunking_config=ChunkingConfig(
+                    chunk_lines=40,
+                    chunk_lines_overlap=0.25,
+                    max_chars=2000,
+                ),
             )
             result = query_html(
                 query_engine,

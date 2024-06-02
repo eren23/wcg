@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from scipy.spatial.distance import cdist
+from concurrent.futures import ThreadPoolExecutor
 
 from llama_index.core import (
     Document,
@@ -30,6 +31,13 @@ logger = logging.getLogger(__name__)
 # Global variables to store initialized models
 EMBEDDING_MODEL_CACHE = {}
 LLM_MODEL_CACHE = {}
+
+
+class ChunkingConfig:
+    def __init__(self, chunk_lines=40, chunk_lines_overlap=0.25, max_chars=2000):
+        self.chunk_lines = chunk_lines
+        self.chunk_lines_overlap = chunk_lines_overlap
+        self.max_chars = max_chars
 
 
 def get_cache(cache_name: str):
@@ -76,36 +84,41 @@ def get_or_create_llm(api_key: str, model: str, llm_type: str):
     return cache[cache_key]
 
 
-def calculate_chunk_parameters(
-    html_content: str, chunk_lines: int = 40, chunk_lines_overlap: float = 0.25
-) -> (int, int):
+def calculate_chunk_parameters(html_content: str) -> ChunkingConfig:
     """Calculate chunk lines and overlap based on HTML content."""
     average_paragraph_length = sum(len(p) for p in html_content.split("</p>")) / max(
         1, html_content.count("</p>")
     )
     chunk_lines = max(40, int(average_paragraph_length / 40))
     chunk_lines_overlap = int(chunk_lines * 0.25)
-    return chunk_lines, chunk_lines_overlap
+    return ChunkingConfig(
+        chunk_lines=chunk_lines, chunk_lines_overlap=chunk_lines_overlap
+    )
 
 
 def create_index(
     html_content: str,
     use_local_embeddings: bool = False,
     embed_model_name: str = "BAAI/bge-small-en-v1.5",
-    chunk_lines: int = 40,
-    chunk_lines_overlap: float = 0.25,
+    chunking_config: ChunkingConfig = None,
 ) -> VectorStoreIndex:
     """Creates a VectorStoreIndex from HTML content, optionally using local embeddings."""
-    chunk_lines, chunk_lines_overlap = calculate_chunk_parameters(
-        html_content, chunk_lines=chunk_lines, chunk_lines_overlap=chunk_lines_overlap
+    # if chunking_config is None:
+    chunking_config = calculate_chunk_parameters(html_content)
+
+    print(
+        chunking_config.chunk_lines,
+        chunking_config.chunk_lines_overlap,
+        chunking_config.max_chars,
     )
 
     splitter = CodeSplitter(
         language="html",
-        chunk_lines=chunk_lines,
-        chunk_lines_overlap=chunk_lines_overlap,
-        max_chars=2000,
+        chunk_lines=chunking_config.chunk_lines,
+        chunk_lines_overlap=chunking_config.chunk_lines_overlap,
+        max_chars=chunking_config.max_chars,
     )
+
     chunks = splitter.split_text(html_content)
     nodes = [Document(text=chunk) for chunk in chunks if chunk.strip()]
 
@@ -139,8 +152,7 @@ def get_query_engine(
     llm_type: str = "openai",
     llm_model: str = "gpt-3.5-turbo",
     query: str = None,
-    chunk_lines: int = 40,
-    chunk_lines_overlap: float = 0.25,
+    chunking_config: ChunkingConfig = None,
 ) -> RetrieverQueryEngine:
     """Configures and returns a RetrieverQueryEngine for querying HTML content."""
     embed_model = (
@@ -150,8 +162,7 @@ def get_query_engine(
         html_content,
         use_local_embeddings,
         model_name,
-        chunk_lines=chunk_lines,
-        chunk_lines_overlap=chunk_lines_overlap,
+        chunking_config=chunking_config,
     )
 
     retriever = BM25Retriever.from_defaults(index=index, similarity_top_k=top_k)
